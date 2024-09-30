@@ -4,15 +4,15 @@ import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useNavigation } from "@react-navigation/native";
+import Header from "../../components/Header/Header";
+import Footer from "../../components/Footer/Footer";
 
 const Contract = () => {
   const navigation = useNavigation();
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>KVKK ve Aydınlatma Politikası</Text>
-      </View>
+      <Header/>
 
       <View style={styles.content}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -60,29 +60,8 @@ const Contract = () => {
         </Text>
       </ScrollView>
       </View>
-
-      <View style={styles.footer}>
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => navigation.navigate("Contract")}
-        >
-          <FontAwesome5 name="file-signature" size={30} color="white" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => navigation.navigate("HomePage")}
-        >
-          <MaterialCommunityIcons name="home" size={42} color="white" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          activeOpacity={0.8}
-          onPress={() => navigation.navigate("Settings")}
-        >
-          <Ionicons name="settings-sharp" size={36} color="white" />
-        </TouchableOpacity>
-      </View>
+        <Footer/>
+     
     </View>
   );
 };
@@ -90,16 +69,6 @@ const Contract = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    backgroundColor: "#6449eb",
-    padding: 20,
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#fff",
   },
   content: {
     flex: 1,
@@ -113,14 +82,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#333",
   },
-  footer: {
-    padding: 15,
-    backgroundColor: "#6449eb",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
   heading: {
     fontSize: 18,
     fontWeight: "bold",
