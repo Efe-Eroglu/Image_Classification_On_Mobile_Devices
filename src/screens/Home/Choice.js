@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   subtitle: {
     textAlign: "center",
     fontSize: 18,
-    fontWeight: "700",
+    fontWeight: "600",
     color: "white",
   },
   image: {
