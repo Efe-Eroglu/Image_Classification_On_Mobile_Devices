@@ -8,37 +8,56 @@ import {
   Image,
   Alert,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 import { Camera } from "expo-camera";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import * as tf from '@tensorflow/tfjs';
-import * as tfjs from '@tensorflow/tfjs-react-native';
+import { Asset } from "expo-asset";
 import { useNavigation } from "@react-navigation/native";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
+import * as ImagePicker from 'expo-image-picker';
 
 const Choice = () => {
   const navigation = useNavigation();
-  
+
   const [cameraPermission, setCameraPermission] = useState(null);
   const [galleryPermission, setGalleryPermission] = useState(null);
   const [image, setImage] = useState(null);
   const [model, setModel] = useState(null);
-  const [prediction, setPrediction] = useState('');
+  const [prediction, setPrediction] = useState("");
 
   useEffect(() => {
     (async () => {
       const cameraStatus = await Camera.requestCameraPermissionsAsync();
       setCameraPermission(cameraStatus.status === "granted");
 
-      const galleryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const galleryStatus =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
       setGalleryPermission(galleryStatus.status === "granted");
 
       await tf.ready();
-      const loadedModel = await tf.loadLayersModel(bundleResourceIO(require('../../model/model.tflite'))); 
-      setModel(loadedModel);
+      loadModel();
     })();
   }, []);
+
+  const loadModel = async () => {
+    try {
+      const modelJson = Asset.fromModule(require("../../model/model.json"));
+      const modelWeights = Asset.fromModule(require("../../model/weight.bin"));
+
+      await modelJson.downloadAsync();
+      await modelWeights.downloadAsync();
+
+      const modelJsonPath = modelJson.localUri || modelJson.uri;
+      const modelWeightsPath = modelWeights.localUri || modelWeights.uri;
+
+      const loadedModel = await tf.loadGraphModel(
+        tf.io.browserFiles([modelJsonPath, modelWeightsPath])
+      );
+      setModel(loadedModel);
+    } catch (error) {
+      console.error("Model yüklenirken bir hata oluştu:", error);
+    }
+  };
 
   const openCamera = async () => {
     if (cameraPermission === false) {
@@ -74,20 +93,20 @@ const Choice = () => {
 
     const response = await fetch(imageUri);
     const imageData = await response.blob();
-    
+
     const imgTensor = tf.browser.fromPixels(imageData);
     const resizedImg = tf.image.resizeBilinear(imgTensor, [62, 62]);
     const normalizedImg = resizedImg.div(255).expandDims(0);
 
     const prediction = model.predict(normalizedImg);
-    const classId = prediction.dataSync()[0] > 0.5 ? 'Kedi' : 'Köpek';
+    const classId = prediction.dataSync()[0] > 0.5 ? "Kedi" : "Köpek";
     setPrediction(`Tahmin: ${classId}`);
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#3e24bf" />
-      <Header/>
+      <Header />
       <View style={styles.content}>
         <TouchableOpacity style={styles.box} onPress={openCamera}>
           <View style={styles.topBox}>
@@ -111,11 +130,13 @@ const Choice = () => {
             <Text style={styles.subtitle}>Galeriden bir fotoğraf seç</Text>
           </View>
         </TouchableOpacity>
-
+      
         {image && <Image source={{ uri: image }} style={styles.image} />}
-        {prediction ? <Text style={styles.prediction}>{prediction}</Text> : null}
+        {prediction ? (
+          <Text style={styles.prediction}>{prediction}</Text>
+        ) : null} 
       </View>
-      <Footer/>
+      <Footer />
     </View>
   );
 };
@@ -159,7 +180,7 @@ const styles = StyleSheet.create({
   },
   prediction: {
     fontSize: 24,
-    fontWeight: "bold",
+    fontWeight: "500",
     marginTop: 20,
   },
 });
