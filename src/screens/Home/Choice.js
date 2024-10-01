@@ -11,29 +11,32 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { Camera } from "expo-camera";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import * as tf from '@tensorflow/tfjs';
+import * as tfjs from '@tensorflow/tfjs-react-native';
 import { useNavigation } from "@react-navigation/native";
 import Header from "../../components/Header/Header";
 import Footer from "../../components/Footer/Footer";
 
 const Choice = () => {
-
   const navigation = useNavigation();
-
+  
   const [cameraPermission, setCameraPermission] = useState(null);
   const [galleryPermission, setGalleryPermission] = useState(null);
   const [image, setImage] = useState(null);
+  const [model, setModel] = useState(null);
+  const [prediction, setPrediction] = useState('');
 
   useEffect(() => {
     (async () => {
       const cameraStatus = await Camera.requestCameraPermissionsAsync();
       setCameraPermission(cameraStatus.status === "granted");
 
-      const galleryStatus =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const galleryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
       setGalleryPermission(galleryStatus.status === "granted");
+
+      await tf.ready();
+      const loadedModel = await tf.loadLayersModel(bundleResourceIO(require('../../model/model.tflite'))); 
+      setModel(loadedModel);
     })();
   }, []);
 
@@ -46,6 +49,7 @@ const Choice = () => {
     const result = await ImagePicker.launchCameraAsync();
     if (!result.canceled) {
       setImage(result.assets[0].uri);
+      classifyImage(result.assets[0].uri);
     }
   };
 
@@ -58,15 +62,32 @@ const Choice = () => {
     const result = await ImagePicker.launchImageLibraryAsync();
     if (!result.canceled) {
       setImage(result.assets[0].uri);
+      classifyImage(result.assets[0].uri);
     }
+  };
+
+  const classifyImage = async (imageUri) => {
+    if (!model) {
+      Alert.alert("Model yüklenmedi");
+      return;
+    }
+
+    const response = await fetch(imageUri);
+    const imageData = await response.blob();
+    
+    const imgTensor = tf.browser.fromPixels(imageData);
+    const resizedImg = tf.image.resizeBilinear(imgTensor, [62, 62]);
+    const normalizedImg = resizedImg.div(255).expandDims(0);
+
+    const prediction = model.predict(normalizedImg);
+    const classId = prediction.dataSync()[0] > 0.5 ? 'Kedi' : 'Köpek';
+    setPrediction(`Tahmin: ${classId}`);
   };
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#3e24bf" />
-
       <Header/>
-
       <View style={styles.content}>
         <TouchableOpacity style={styles.box} onPress={openCamera}>
           <View style={styles.topBox}>
@@ -92,6 +113,7 @@ const Choice = () => {
         </TouchableOpacity>
 
         {image && <Image source={{ uri: image }} style={styles.image} />}
+        {prediction ? <Text style={styles.prediction}>{prediction}</Text> : null}
       </View>
       <Footer/>
     </View>
@@ -135,7 +157,11 @@ const styles = StyleSheet.create({
     height: 200,
     marginTop: 20,
   },
-
+  prediction: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginTop: 20,
+  },
 });
 
 export default Choice;
